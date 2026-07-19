@@ -1,0 +1,57 @@
+{% extends "shop/base_shop.html" %}
+{% block title %}Order Placed — GizmoBay{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <div class="order-status-card">
+    <div id="paymentStatus">
+      <div class="status-icon-wrap status-pending"><i class="bi bi-phone-vibrate"></i></div>
+      <h4 class="fw-800">Check your phone!</h4>
+      <p class="text-muted mb-4">We sent an M-Pesa payment request to <b>{{ order.delivery_phone }}</b>.<br>Enter your M-Pesa PIN to complete your order.</p>
+    </div>
+    <div id="paymentSpinner" class="mb-3">
+      <div class="spinner-border text-primary" role="status" style="width:24px;height:24px;border-width:2px"></div>
+      <span style="font-size:13px;color:var(--shop-muted);margin-left:10px">Waiting for payment confirmation…</span>
+    </div>
+
+    <!-- Order steps -->
+    <div class="order-steps">
+      <div class="order-step">
+        <div class="step-dot done"><i class="bi bi-check"></i></div>
+        <div class="step-label">Order placed</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="order-step">
+        <div class="step-dot active">2</div>
+        <div class="step-label">M-Pesa payment</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="order-step">
+        <div class="step-dot">3</div>
+        <div class="step-label">Admin confirms</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="order-step">
+        <div class="step-dot">4</div>
+        <div class="step-label">Delivery</div>
+      </div>
+    </div>
+
+    <div style="background:#f8f9fc;border-radius:10px;padding:14px;font-size:13px;margin-bottom:20px;text-align:left">
+      <div style="font-weight:600;margin-bottom:6px">Order #{{ order.order_number }}</div>
+      <div style="color:var(--shop-muted)">Total: <b>KSh {{ order.total_amount|floatformat:0 }}</b></div>
+      <div style="color:var(--shop-muted)">Delivery to: {{ order.delivery_address }}</div>
+    </div>
+
+    <form method="post" action="{% url 'shop:retry_payment' order.order_number %}" id="retryBtn" hidden>
+      {% csrf_token %}
+      <button type="submit" class="btn-shop-primary" style="width:100%;padding:11px">
+        <i class="bi bi-arrow-clockwise me-2"></i>Resend M-Pesa Prompt
+      </button>
+    </form>
+    <a href="{% url 'shop:my_orders' %}" style="display:block;margin-top:12px;font-size:13px;color:var(--shop-accent)">
+      <i class="bi bi-receipt me-1"></i>View my orders
+    </a>
+  </div>
+</div>
+<div id="paymentPollTarget" data-order="{{ order.order_number }}" hidden></div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "shop/base_shop.html" %}
+{% block title %}Checkout — GizmoBay{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <h2 style="padding:28px 0 20px;font-weight:800">Checkout</h2>
+  <div class="checkout-layout">
+    <div>
+      <div class="checkout-form-card">
+        <div class="checkout-section-title"><i class="bi bi-geo-alt-fill"></i> Delivery Details</div>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Delivery address *</label>
+            {{ form.delivery_address }}
+            {% if form.delivery_address.errors %}<div class="text-danger" style="font-size:12px">{{ form.delivery_address.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">M-Pesa phone number *</label>
+            {{ form.delivery_phone }}
+            <div class="form-text">{{ form.delivery_phone.help_text }}</div>
+            {% if form.delivery_phone.errors %}<div class="text-danger" style="font-size:12px">{{ form.delivery_phone.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Order notes (optional)</label>
+            {{ form.notes }}
+          </div>
+          <div class="mpesa-logo mb-3"><i class="bi bi-phone-fill" style="font-size:20px"></i> You will receive an M-Pesa STK push prompt on your phone</div>
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          <button type="submit" class="btn-shop-primary" style="width:100%;padding:13px;font-size:15px;font-weight:700;">
+            <i class="bi bi-lock-fill me-2"></i>Place Order & Pay KSh {{ cart.total|floatformat:0 }}
+          </button>
+        </form>
+      </div>
+    </div>
+    <div>
+      <div class="cart-summary">
+        <div class="summary-title">Your Order</div>
+        {% for item in cart %}
+        <div class="summary-row">
+          <span>{{ item.name }} × {{ item.qty }}</span>
+          <span>KSh {{ item.subtotal|floatformat:0 }}</span>
+        </div>
+        {% endfor %}
+        <div class="summary-row" style="margin-top:8px;border-top:1px solid var(--shop-border);padding-top:12px">
+          <span>Delivery</span><span style="color:#16a34a">Free</span>
+        </div>
+        <div class="summary-row summary-total"><span>Total</span><span>KSh {{ cart.total|floatformat:0 }}</span></div>
+        <div style="font-size:12px;color:var(--shop-muted);margin-top:14px;line-height:1.5;">
+          <i class="bi bi-info-circle me-1"></i>
+          Order is confirmed after M-Pesa payment is verified. Stock is reserved once admin confirms.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

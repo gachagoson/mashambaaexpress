@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Shop Orders — GizmoBay{% endblock %}
+{% block page_title %}Online Shop Orders{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'shop:home' %}" class="btn btn-outline-secondary btn-sm" target="_blank"><i class="bi bi-shop me-1"></i>View Shop</a>
+{% endblock %}
+{% block content %}
+<div class="admin-order-grid mb-4">
+  <div class="admin-stat">
+    <div class="admin-stat-label">Pending</div>
+    <div class="admin-stat-value" style="color:var(--warning)">{{ counts.pending }}</div>
+  </div>
+  <div class="admin-stat">
+    <div class="admin-stat-label">Confirmed</div>
+    <div class="admin-stat-value" style="color:var(--accent)">{{ counts.confirmed }}</div>
+  </div>
+  <div class="admin-stat">
+    <div class="admin-stat-label">Shipped</div>
+    <div class="admin-stat-value" style="color:#16a34a">{{ counts.shipped }}</div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'shop:admin_orders' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+      <a href="?status=pending"    class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Pending</a>
+      <a href="?status=confirmed"  class="btn btn-sm {% if status_filter == 'confirmed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Confirmed</a>
+      <a href="?status=processing" class="btn btn-sm {% if status_filter == 'processing' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Processing</a>
+      <a href="?status=shipped"    class="btn btn-sm {% if status_filter == 'shipped' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Shipped</a>
+      <a href="?status=delivered"  class="btn btn-sm {% if status_filter == 'delivered' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Delivered</a>
+      <a href="?status=cancelled"  class="btn btn-sm {% if status_filter == 'cancelled' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Cancelled</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Order #</th><th>Customer</th><th>Date</th><th>Items</th><th>Status</th><th>Payment</th><th class="text-end">Total</th><th></th></tr></thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td><code>{{ order.order_number }}</code></td>
+          <td>
+            <div style="font-weight:500">{{ order.customer.full_name|default:"—" }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">{{ order.customer.phone|default:"" }}</div>
+          </td>
+          <td style="font-size:12px;white-space:nowrap">{{ order.created_at|date:"d M Y H:i" }}</td>
+          <td style="font-size:12px">{{ order.items.count }} item{{ order.items.count|pluralize }}</td>
+          <td><span class="status-badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+          <td>
+            <span class="status-badge {% if order.payment_status == 'paid' %}badge-delivered{% elif order.payment_status == 'failed' %}badge-cancelled{% else %}badge-pending{% endif %}">
+              {{ order.get_payment_status_display }}
+            </span>
+          </td>
+          <td class="text-end fw-600">KSh {{ order.total_amount|floatformat:0 }}</td>
+          <td><a href="{% url 'shop:admin_order_detail' order.order_number %}" class="btn btn-sm btn-outline-secondary">Manage</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No orders yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

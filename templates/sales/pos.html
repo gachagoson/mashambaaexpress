@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}New Sale — GizmoBay{% endblock %}
+{% block page_title %}New Sale — POS{% endblock %}
+{% block topbar_actions %}
+  <div class="barcode-indicator" id="barcodeStatus">
+    <span class="barcode-dot active" id="barcodeDot"></span>
+    <span id="barcodeLabel">Barcode scanner ready</span>
+  </div>
+{% endblock %}
+{% block content %}
+<div class="pos-grid">
+
+  <!-- Left: product search -->
+  <div class="product-search-panel">
+    <div class="d-flex gap-2">
+      <input type="text" id="productSearch" class="form-control" placeholder="Search products by name, SKU or barcode…" autofocus>
+      <select id="saleTypeFilter" class="form-select" style="max-width:160px">
+        <option value="retail">Retail</option>
+        <option value="wholesale">Wholesale</option>
+      </select>
+    </div>
+    <div class="product-grid" id="productGrid">
+      <div class="text-muted text-center py-5 col-span-all" style="grid-column:1/-1">Type to search or scan a product</div>
+    </div>
+  </div>
+
+  <!-- Right: cart -->
+  <div class="cart-panel">
+    <div class="cart-header">
+      Cart
+      <button class="btn btn-sm btn-outline-danger" id="clearCart">Clear</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty" id="cartEmpty"><i class="bi bi-cart3" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3"></i>Cart is empty</div>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-meta">
+        <div>
+          <label class="form-label" style="font-size:11px;">Customer</label>
+          <select class="form-select form-select-sm" id="cartCustomer">
+            <option value="">Walk-in</option>
+            {% for c in customers %}<option value="{{ c.pk }}" data-type="{{ c.customer_type }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px;">Payment</label>
+          <select class="form-select form-select-sm" id="cartPayment">
+            <option value="cash">Cash</option>
+            <option value="mpesa">M-Pesa</option>
+            <option value="bank">Bank</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px;">Discount (KSh)</label>
+          <input type="number" class="form-control form-control-sm" id="cartDiscount" value="0" min="0">
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px;">Sale type</label>
+          <select class="form-select form-select-sm" id="cartSaleType">
+            <option value="retail">Retail</option>
+            <option value="wholesale">Wholesale</option>
+          </select>
+        </div>
+      </div>
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="cartTotal">KSh 0</span>
+      </div>
+      <button class="btn btn-primary w-100" id="processBtn" style="padding:12px;font-size:15px;font-weight:600;" disabled>
+        <i class="bi bi-check2-circle me-2"></i>Process Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal fade" id="receiptModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center py-5">
+        <div style="font-size:48px;color:var(--success)"><i class="bi bi-check-circle-fill"></i></div>
+        <h4 class="mt-3 fw-700">Sale Complete!</h4>
+        <p class="text-muted" id="receiptNum"></p>
+        <div class="d-flex gap-2 justify-content-center mt-4">
+          <a id="receiptLink" href="#" class="btn btn-primary" target="_blank">View Receipt</a>
+          <button class="btn btn-outline-secondary" id="newSaleBtn">New Sale</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let cart = [];
+let allProducts = [];
+let barcodeBuffer = '';
+let barcodeTimer = null;
+
+// ── Product search ──
+const searchInput = document.getElementById('productSearch');
+const productGrid = document.getElementById('productGrid');
+const saleTypeFilter = document.getElementById('saleTypeFilter');
+const cartSaleType = document.getElementById('cartSaleType');
+
+searchInput.addEventListener('input', debounce(searchProducts, 250));
+saleTypeFilter.addEventListener('change', () => {
+  cartSaleType.value = saleTypeFilter.value;
+  renderGrid(allProducts);
+});
+cartSaleType.addEventListener('change', () => {
+  saleTypeFilter.value = cartSaleType.value;
+  renderGrid(allProducts);
+});
+
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+async function searchProducts() {
+  const q = searchInput.value.trim();
+  if (!q) { productGrid.innerHTML = '<div class="text-muted text-center py-5" style="grid-column:1/-1">Type to search or scan a product</div>'; allProducts = []; return; }
+  try {
+    const r = await fetch(`/inventory/barcode/lookup/?barcode=${encodeURIComponent(q)}&mode=sale`);
+    const data = await r.json();
+    if (data.found) { addToCart(data); searchInput.value = ''; return; }
+  } catch(e){}
+  const r = await fetch(`/inventory/?q=${encodeURIComponent(q)}&format=json`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  // fallback: use our product API
+  const res = await fetch(`/inventory/barcode/lookup/?barcode=___none___`);
+  // We'll do a simple name search via a separate endpoint
+  fetchProductSearch(q);
+}
+
+async function fetchProductSearch(q) {
+  const r = await fetch(`/sales/product-search/?q=${encodeURIComponent(q)}`);
+  if (!r.ok) return;
+  allProducts = await r.json();
+  renderGrid(allProducts);
+}
+
+function renderGrid(products) {
+  const type = saleTypeFilter.value;
+
+  if (!products.length) {
+    productGrid.innerHTML =
+      '<div class="text-muted text-center py-5" style="grid-column:1/-1">No products found.</div>';
+    return;
+  }
+
+  productGrid.innerHTML = products.map(p => {
+    const price = type === 'wholesale'
+      ? p.wholesale_price
+      : p.retail_price;
+
+    const out = p.stock_qty <= 0;
+
+    return `
+      <button class="product-card ${out ? 'out-of-stock' : ''}"
+              data-id="${p.id}"
+              ${out ? 'disabled' : ''}>
+        <div class="product-card-name">${p.name}</div>
+        <div class="product-card-price">KSh ${formatNum(price)}</div>
+        <div class="product-card-stock">
+          ${out ? 'Out of stock' : p.stock_qty + ' in stock'}
+        </div>
+      </button>
+    `;
+  }).join('');
+}
+
+productGrid.addEventListener('click', (e) => {
+  const card = e.target.closest('.product-card');
+  if (!card) return;
+
+  const id = Number(card.dataset.id);
+  const product = allProducts.find(p => p.id === id);
+
+  if (product) {
+    addToCart(product);
+  }
+});
+
+function addToCart(product) {
+  const type = cartSaleType.value;
+  const price = parseFloat(type === 'wholesale' ? product.wholesale_price : product.retail_price);
+  const existing = cart.find(i => i.id === product.id);
+  if (existing) {
+    if (existing.qty >= product.stock_qty) { showToast('Not enough stock'); return; }
+    existing.qty++;
+    existing.subtotal = existing.qty * existing.price;
+  } else {
+    cart.push({ id: product.id, name: product.name, price, qty: 1, subtotal: price, stock: product.stock_qty });
+  }
+  renderCart();
+}
+
+function renderCart() {
+  const cartItems = document.getElementById('cartItems');
+  const cartEmpty = document.getElementById('cartEmpty');
+  const processBtn = document.getElementById('processBtn');
+  const discount = parseFloat(document.getElementById('cartDiscount').value) || 0;
+  if (!cart.length) {
+    cartItems.innerHTML = '<div class="cart-empty"><i class="bi bi-cart3" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3"></i>Cart is empty</div>';
+    processBtn.disabled = true;
+    document.getElementById('cartTotal').textContent = 'KSh 0';
+    return;
+  }
+  let total = 0;
+  cartItems.innerHTML = cart.map((item, idx) => {
+    total += item.subtotal;
+    return `<div class="cart-item">
+      <div style="flex:1">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-price">KSh ${formatNum(item.price)} each</div>
+      </div>
+      <button class="qty-btn" onclick="changeQty(${idx},-1)">−</button>
+      <span class="qty-val">${item.qty}</span>
+      <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
+      <span class="cart-item-subtotal">KSh ${formatNum(item.subtotal)}</span>
+      <button class="qty-btn" onclick="removeItem(${idx})" style="color:var(--danger)">×</button>
+    </div>`;
+  }).join('');
+  const net = Math.max(0, total - discount);
+  document.getElementById('cartTotal').textContent = 'KSh ' + formatNum(net);
+  processBtn.disabled = false;
+}
+
+function changeQty(idx, delta) {
+  cart[idx].qty = Math.max(1, Math.min(cart[idx].stock, cart[idx].qty + delta));
+  cart[idx].subtotal = cart[idx].qty * cart[idx].price;
+  renderCart();
+}
+function removeItem(idx) { cart.splice(idx, 1); renderCart(); }
+document.getElementById('clearCart').addEventListener('click', () => { cart = []; renderCart(); });
+document.getElementById('cartDiscount').addEventListener('input', renderCart);
+
+// ── Process sale ──
+document.getElementById('processBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('processBtn');
+  btn.disabled = true; btn.textContent = 'Processing…';
+  const payload = {
+    items: cart.map(i => ({ product_id: i.id, quantity: i.qty, unit_price: i.price })),
+    sale_type: cartSaleType.value,
+    payment_mode: document.getElementById('cartPayment').value,
+    customer_id: document.getElementById('cartCustomer').value || null,
+    discount: parseFloat(document.getElementById('cartDiscount').value) || 0,
+  };
+  try {
+    const r = await fetch('/sales/process/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('receiptNum').textContent = 'Receipt: ' + data.receipt;
+      document.getElementById('receiptLink').href = '/sales/' + data.sale_id + '/receipt/';
+      new bootstrap.Modal(document.getElementById('receiptModal')).show();
+      cart = []; renderCart();
+    } else { showToast(data.error || 'Error processing sale', 'danger'); }
+  } catch(e) { showToast('Network error', 'danger'); }
+  btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Process Sale';
+});
+
+document.getElementById('newSaleBtn').addEventListener('click', () => {
+  bootstrap.Modal.getInstance(document.getElementById('receiptModal')).hide();
+  searchInput.focus();
+});
+
+// ── Barcode scanner (HID keyboard wedge) ──
+document.addEventListener('keydown', (e) => {
+  if (document.activeElement === searchInput) return; // let search handle it
+  if (e.key === 'Enter' && barcodeBuffer) {
+    handleBarcode(barcodeBuffer);
+    barcodeBuffer = '';
+    clearTimeout(barcodeTimer);
+    return;
+  }
+  if (e.key.length === 1) {
+    barcodeBuffer += e.key;
+    clearTimeout(barcodeTimer);
+    barcodeTimer = setTimeout(() => { barcodeBuffer = ''; }, 100);
+  }
+});
+
+async function handleBarcode(code) {
+  const r = await fetch(`/inventory/barcode/lookup/?barcode=${encodeURIComponent(code)}&mode=sale`);
+  const data = await r.json();
+  if (data.found) { addToCart(data); showToast('Added: ' + data.name, 'success'); }
+  else { showToast('Barcode not found: ' + code, 'warning'); }
+}
+
+function formatNum(n) { return parseFloat(n).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+function showToast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `alert alert-${type} position-fixed`;
+  t.style.cssText = 'bottom:20px;right:20px;z-index:9999;min-width:260px;font-size:13px;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Customer selection auto-sets sale type
+document.getElementById('cartCustomer').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (opt.dataset.type === 'wholesale') {
+    cartSaleType.value = 'wholesale';
+    saleTypeFilter.value = 'wholesale';
+    renderCart();
+  }
+});
+</script>
+{% endblock %}

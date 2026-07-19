@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block auth_content %}
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="bi bi-cpu-fill"></i>
+      <h1>GizmoBay</h1>
+      <p>Stock Management System</p>
+    </div>
+    {% if form.errors %}
+      <div class="alert alert-danger" style="font-size:13px;">Invalid username or password.</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" autofocus placeholder="Enter username">
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" placeholder="Enter password">
+      </div>
+      <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Sale {{ sale.receipt_number }} — GizmoBay{% endblock %}
+{% block page_title %}{{ sale.receipt_number }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'sales:sale_receipt' sale.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank"><i class="bi bi-printer me-1"></i>Print receipt</a>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted">Receipt</td><td><code>{{ sale.receipt_number }}</code></td></tr>
+          <tr><td class="text-muted">Date</td><td>{{ sale.created_at|date:"d M Y H:i" }}</td></tr>
+          <tr><td class="text-muted">Customer</td><td>{{ sale.customer|default:"Walk-in" }}</td></tr>
+          <tr><td class="text-muted">Type</td><td><span class="status-badge badge-{{ sale.sale_type }}">{{ sale.get_sale_type_display }}</span></td></tr>
+          <tr><td class="text-muted">Payment</td><td><span class="status-badge badge-{{ sale.payment_mode }}">{{ sale.get_payment_mode_display }}</span></td></tr>
+          <tr><td class="text-muted">Served by</td><td>{{ sale.served_by|default:"—" }}</td></tr>
+          {% if sale.discount %}<tr><td class="text-muted">Discount</td><td>KSh {{ sale.discount }}</td></tr>{% endif %}
+          <tr><td class="text-muted fw-600">Total</td><td class="fw-700">KSh {{ sale.net_total }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Items</div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Product</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Subtotal</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ item.product_name }}</td>
+              <td class="text-end">{{ item.quantity }}</td>
+              <td class="text-end">KSh {{ item.unit_price|floatformat:0 }}</td>
+              <td class="text-end fw-600">KSh {{ item.subtotal|floatformat:0 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="3" class="text-end fw-700">Total</td><td class="text-end fw-700">KSh {{ sale.net_total|floatformat:0 }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

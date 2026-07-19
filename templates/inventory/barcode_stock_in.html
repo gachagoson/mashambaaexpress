@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Scan Stock-in — GizmoBay{% endblock %}
+{% block page_title %}Barcode Stock-in{% endblock %}
+{% block content %}
+<div class="row"><div class="col-lg-5">
+  <div class="card">
+    <div class="card-header">
+      <i class="bi bi-upc-scan me-2"></i>Scan to add stock
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-4" style="font-size:13px;">Point your barcode scanner at a product. If found, stock will be updated. If not found, you'll be redirected to create the product.</p>
+      {% if messages %}{% for msg in messages %}<div class="alert alert-{{ msg.tags|default:'info' }}">{{ msg }}</div>{% endfor %}{% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Barcode</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-upc"></i></span>
+            <input type="text" name="barcode" class="form-control form-control-lg" autofocus placeholder="Scan barcode…" autocomplete="off">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Quantity to add</label>
+          <input type="number" name="quantity" class="form-control" value="1" min="1">
+        </div>
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-circle me-2"></i>Add to stock</button>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

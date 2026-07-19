@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Purchase Orders — GizmoBay{% endblock %}
+{% block page_title %}Purchase Orders{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'purchasing:po_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>New order</a>
+  <a href="{% url 'purchasing:supplier_list' %}" class="btn btn-outline-secondary btn-sm">Suppliers</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Order #</th><th>Supplier</th><th>Status</th><th>Date</th><th>Delivered</th><th>Created by</th><th class="text-end">Total cost</th><th></th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><code>{{ o.order_number }}</code></td>
+          <td>{{ o.supplier }}</td>
+          <td><span class="status-badge badge-{{ o.status }}">{{ o.get_status_display }}</span></td>
+          <td style="font-size:12px;">{{ o.ordered_at|date:"d M Y" }}</td>
+          <td style="font-size:12px;">{{ o.delivered_at|date:"d M Y"|default:"—" }}</td>
+          <td>{{ o.created_by|default:"—" }}</td>
+          <td class="text-end">KSh {{ o.total_cost|floatformat:0 }}</td>
+          <td><a href="{% url 'purchasing:po_detail' o.pk %}" class="btn btn-sm btn-outline-secondary">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No purchase orders yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

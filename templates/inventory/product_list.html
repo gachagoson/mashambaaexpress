@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Inventory — GizmoBay{% endblock %}
+{% block page_title %}Inventory{% endblock %}
+{% block topbar_actions %}
+  {% if user.is_admin %}
+  <a href="{% url 'inventory:product_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add product</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search name, SKU or barcode…" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <select name="category" class="form-select">
+          <option value="">All categories</option>
+          {% for c in categories %}<option value="{{ c.pk }}" {% if selected_category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="stock" class="form-select">
+          <option value="">All stock</option>
+          <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low stock</option>
+          <option value="out" {% if stock_filter == 'out' %}selected{% endif %}>Out of stock</option>
+        </select>
+      </div>
+      <div class="col-auto"><button class="btn btn-outline-secondary" type="submit">Filter</button></div>
+      <div class="col-auto"><a href="{% url 'inventory:product_list' %}" class="btn btn-outline-secondary">Clear</a></div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Product</th><th>Category</th><th>SKU</th><th>Retail</th><th>Wholesale</th><th>Qty</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr class="{% if p.is_out_of_stock %}out-stock-row{% elif p.is_low_stock %}low-stock-row{% endif %}">
+          <td>
+            <a href="{% url 'inventory:product_detail' p.pk %}" style="font-weight:500;text-decoration:none;color:var(--text)">{{ p.name }}</a>
+            {% if p.barcode %}<br><small class="text-muted" style="font-size:11px;"><i class="bi bi-upc"></i> {{ p.barcode }}</small>{% endif %}
+          </td>
+          <td>{{ p.category|default:"—" }}</td>
+          <td><code style="font-size:11px;">{{ p.sku }}</code></td>
+          <td>KSh {{ p.retail_price|floatformat:0 }}</td>
+          <td>KSh {{ p.wholesale_price|floatformat:0 }}</td>
+          <td class="{% if p.is_out_of_stock %}stock-out{% elif p.is_low_stock %}stock-low{% else %}stock-ok{% endif %} fw-600">{{ p.stock_qty }}</td>
+          <td>
+            {% if p.is_out_of_stock %}<span class="status-badge badge-cancelled">Out</span>
+            {% elif p.is_low_stock %}<span class="status-badge badge-pending">Low</span>
+            {% else %}<span class="status-badge badge-delivered">OK</span>{% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'inventory:product_detail' p.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+              {% if user.is_admin %}
+              <a href="{% url 'inventory:product_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No products found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

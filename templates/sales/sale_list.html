@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Sales — GizmoBay{% endblock %}
+{% block page_title %}Sales{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'sales:pos' %}" class="btn btn-primary btn-sm"><i class="bi bi-cart-plus me-1"></i>New sale</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Type</th><th>Payment</th><th>Served by</th><th class="text-end">Amount</th><th></th></tr></thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr>
+          <td><code>{{ sale.receipt_number }}</code></td>
+          <td style="font-size:12px;white-space:nowrap;">{{ sale.created_at|date:"d M Y H:i" }}</td>
+          <td>{{ sale.customer|default:"Walk-in" }}</td>
+          <td><span class="status-badge badge-{{ sale.sale_type }}">{{ sale.get_sale_type_display }}</span></td>
+          <td><span class="status-badge badge-{{ sale.payment_mode }}">{{ sale.get_payment_mode_display }}</span></td>
+          <td>{{ sale.served_by|default:"—" }}</td>
+          <td class="text-end fw-600">KSh {{ sale.total_amount|floatformat:0 }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'sales:sale_detail' sale.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+              <a href="{% url 'sales:sale_receipt' sale.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank"><i class="bi bi-printer"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No sales yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

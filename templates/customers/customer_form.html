@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Add Customer — GizmoBay{% endblock %}
+{% block page_title %}Add Customer{% endblock %}
+{% block content %}
+<div class="row"><div class="col-lg-5">
+  <div class="card"><div class="card-body">
+    <form method="post">{% csrf_token %}{{ form|crispy }}
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a href="{% url 'customers:customer_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

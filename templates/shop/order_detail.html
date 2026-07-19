@@ -1,0 +1,56 @@
+{% extends "shop/base_shop.html" %}
+{% block title %}Order {{ order.order_number }} — GizmoBay{% endblock %}
+{% block content %}
+<div class="container-xl" style="padding-top:32px;padding-bottom:40px">
+  <a href="{% url 'shop:my_orders' %}" style="font-size:13px;color:var(--shop-accent)"><i class="bi bi-arrow-left me-1"></i>Back to orders</a>
+  <h3 style="margin:16px 0 6px;font-weight:800">Order {{ order.order_number }}</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <span class="status-badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
+    <span class="status-badge badge-{% if order.payment_status == 'paid' %}paid{% elif order.payment_status == 'failed' %}payment-failed{% else %}awaiting-payment{% endif %}">{{ order.get_payment_status_display }}</span>
+    <span style="font-size:13px;color:var(--shop-muted);align-self:center">{{ order.created_at|date:"d M Y, H:i" }}</span>
+  </div>
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="cart-table mb-4">
+        {% for item in items %}
+        <div class="cart-row">
+          <div class="cart-item-img-placeholder" style="width:56px;height:56px;font-size:22px;flex-shrink:0"><i class="bi bi-cpu"></i></div>
+          <div class="cart-item-info">
+            <div class="cart-item-name">{{ item.product_name }}</div>
+            <div class="cart-item-price">KSh {{ item.unit_price|floatformat:0 }} × {{ item.quantity }}</div>
+          </div>
+          <div class="cart-item-subtotal">KSh {{ item.subtotal|floatformat:0 }}</div>
+        </div>
+        {% endfor %}
+        <div class="cart-row" style="background:#fafafa">
+          <div style="flex:1;font-weight:700;font-size:15px;text-align:right">Total</div>
+          <div class="cart-item-subtotal" style="font-size:17px">KSh {{ order.total_amount|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="cart-summary mb-3">
+        <div class="summary-title">Delivery Info</div>
+        <div style="font-size:13px;line-height:1.8">
+          <div><b>Address:</b> {{ order.delivery_address }}</div>
+          <div><b>Phone:</b> {{ order.delivery_phone }}</div>
+          {% if order.notes %}<div><b>Notes:</b> {{ order.notes }}</div>{% endif %}
+        </div>
+      </div>
+      {% if txns %}
+      <div class="cart-summary">
+        <div class="summary-title">M-Pesa Transactions</div>
+        {% for txn in txns %}
+        <div style="font-size:12px;padding:8px 0;border-bottom:1px solid var(--shop-border)">
+          <div><b>Status:</b> {{ txn.get_status_display }}</div>
+          {% if txn.mpesa_receipt %}<div><b>Receipt:</b> {{ txn.mpesa_receipt }}</div>{% endif %}
+          <div><b>Amount:</b> KSh {{ txn.amount|floatformat:0 }}</div>
+          <div><b>Time:</b> {{ txn.created_at|date:"d M Y H:i" }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

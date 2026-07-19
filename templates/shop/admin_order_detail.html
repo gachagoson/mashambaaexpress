@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.order_number }} — GizmoBay{% endblock %}
+{% block page_title %}Order {{ order.order_number }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'shop:admin_orders' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>All orders</a>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header">Order info</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted">Order #</td><td><code>{{ order.order_number }}</code></td></tr>
+          <tr><td class="text-muted">Customer</td><td>{{ order.customer.full_name|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Phone</td><td>{{ order.customer.phone|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Email</td><td style="font-size:12px">{{ order.customer.email|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Delivery to</td><td style="font-size:12px">{{ order.delivery_address }}</td></tr>
+          <tr><td class="text-muted">Del. phone</td><td>{{ order.delivery_phone }}</td></tr>
+          {% if order.notes %}<tr><td class="text-muted">Notes</td><td>{{ order.notes }}</td></tr>{% endif %}
+          <tr><td class="text-muted">Placed</td><td style="font-size:12px">{{ order.created_at|date:"d M Y H:i" }}</td></tr>
+          <tr><td class="text-muted">Status</td><td><span class="status-badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td></tr>
+          <tr><td class="text-muted">Payment</td>
+            <td><span class="status-badge {% if order.payment_status == 'paid' %}badge-delivered{% elif order.payment_status == 'failed' %}badge-cancelled{% else %}badge-pending{% endif %}">{{ order.get_payment_status_display }}</span></td></tr>
+          {% if order.confirmed_by %}<tr><td class="text-muted">Confirmed by</td><td>{{ order.confirmed_by }}</td></tr>{% endif %}
+          <tr><td class="text-muted fw-600">Total</td><td class="fw-700">KSh {{ order.total_amount|floatformat:0 }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <div class="card-header">Actions</div>
+      <div class="card-body d-flex flex-column gap-2">
+        {% if order.status == 'pending' %}
+        <form method="post" action="{% url 'shop:admin_order_action' order.order_number %}">{% csrf_token %}
+          <button name="action" value="confirm" class="btn btn-primary w-100"
+            {% if order.payment_status != 'paid' %}disabled title="Payment not confirmed yet"{% endif %}>
+            <i class="bi bi-check2-circle me-1"></i>Confirm & Deduct Stock
+          </button>
+          {% if order.payment_status != 'paid' %}<div class="form-text text-warning mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Awaiting M-Pesa payment</div>{% endif %}
+        </form>
+        {% endif %}
+        {% if order.status == 'confirmed' %}
+        <form method="post" action="{% url 'shop:admin_order_action' order.order_number %}">{% csrf_token %}
+          <button name="action" value="ship" class="btn btn-primary w-100"><i class="bi bi-truck me-1"></i>Mark as Shipped</button>
+        </form>
+        {% endif %}
+        {% if order.status == 'shipped' %}
+        <form method="post" action="{% url 'shop:admin_order_action' order.order_number %}">{% csrf_token %}
+          <button name="action" value="deliver" class="btn btn-success w-100"><i class="bi bi-check-all me-1"></i>Mark as Delivered</button>
+        </form>
+        {% endif %}
+        {% if order.status not in 'delivered,cancelled' %}
+        <form method="post" action="{% url 'shop:admin_order_action' order.order_number %}">{% csrf_token %}
+          <button name="action" value="cancel" class="btn btn-outline-danger w-100"
+            onclick="return confirm('Cancel this order?{% if order.status == 'confirmed' %} Stock will be returned.{% endif %}')">
+            <i class="bi bi-x-circle me-1"></i>Cancel Order
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header">Items ordered</div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Product</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Subtotal</th><th>Stock now</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>
+                <div class="fw-500">{{ item.product_name }}</div>
+                <div style="font-size:11px;color:var(--text-muted)">{{ item.product_sku }}</div>
+              </td>
+              <td class="text-end">{{ item.quantity }}</td>
+              <td class="text-end">KSh {{ item.unit_price|floatformat:0 }}</td>
+              <td class="text-end fw-600">KSh {{ item.subtotal|floatformat:0 }}</td>
+              <td>
+                {% if item.product %}
+                  <span class="{% if item.product.stock_qty < item.quantity %}stock-out{% elif item.product.is_low_stock %}stock-low{% else %}stock-ok{% endif %}">
+                    {{ item.product.stock_qty }} units
+                  </span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr><td colspan="3" class="text-end fw-700">Total</td><td class="text-end fw-700">KSh {{ order.total_amount|floatformat:0 }}</td><td></td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">M-Pesa Transactions</div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Time</th><th>Phone</th><th>Amount</th><th>Receipt</th><th>Status</th><th>Result</th></tr></thead>
+          <tbody>
+            {% for txn in txns %}
+            <tr>
+              <td style="font-size:12px">{{ txn.created_at|date:"d M H:i" }}</td>
+              <td>{{ txn.phone }}</td>
+              <td>KSh {{ txn.amount|floatformat:0 }}</td>
+              <td><code style="font-size:11px">{{ txn.mpesa_receipt|default:"—" }}</code></td>
+              <td><span class="status-badge {% if txn.status == 'success' %}badge-delivered{% elif txn.status == 'failed' %}badge-cancelled{% else %}badge-pending{% endif %}">{{ txn.get_status_display }}</span></td>
+              <td style="font-size:12px;color:var(--text-muted)">{{ txn.result_desc|default:"—"|truncatechars:40 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">No transactions yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

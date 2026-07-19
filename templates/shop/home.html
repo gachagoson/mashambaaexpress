@@ -1,0 +1,96 @@
+{% extends "shop/base_shop.html" %}
+{% block title %}GizmoBay — Electronics Shop Nairobi{% endblock %}
+{% block content %}
+
+{% if not request.GET.q and not request.GET.cat %}
+<!-- Hero -->
+<section class="shop-hero">
+  <div class="container-xl">
+    <div class="hero-label">Kenya's Smart Logistics Network</div>
+    <h1 class="hero-title">Moving Goods. Connecting Markets.<br><span>Delivering Growth.</span></h1>
+    <p class="hero-sub">Reliable logistics for farm produce, businesses, and e-commerce across Kenya.<br> Fast, affordable, and trackable deliveries from<span> <strong>Source to Destination.</strong></span></p>
+    <div class="hero-actions">
+      <a href="#products" class="btn-shop-primary" style="padding:12px 28px;font-size:15px;">Shop Now</a>
+      {% if not customer %}
+      <a href="{% url 'shop:register' %}" class="btn-shop-outline" style="padding:12px 28px;font-size:15px;border-color:rgba(255,255,255,.3);color:#fff;">Create Account</a>
+      {% endif %}
+    </div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-value">{{ products|length }}+</div><div class="hero-stat-label">Products</div></div>
+      <div><div class="hero-stat-value">M-Pesa</div><div class="hero-stat-label">Easy Payment</div></div>
+      <div><div class="hero-stat-value">Fast</div><div class="hero-stat-label">Delivery in Nairobi, Nakuru, Njoro, Kericho</div></div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Category strip -->
+<div class="cat-strip">
+  <div class="container-xl">
+    <div class="cat-strip-inner">
+      <a href="{% url 'shop:home' %}" class="cat-pill {% if not request.GET.cat %}active{% endif %}">
+        <i class="bi bi-grid-3x3-gap"></i> All
+      </a>
+      {% for cat in categories %}
+      <a href="?cat={{ cat.pk }}" class="cat-pill {% if request.GET.cat == cat.pk|stringformat:'s' %}active{% endif %}">
+        {{ cat.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Products -->
+<section class="products-section" id="products">
+  <div class="container-xl">
+    {% if request.GET.q %}
+      <div class="section-title">Results for "{{ request.GET.q }}" <small style="font-size:15px;font-weight:400;color:var(--shop-muted);">({{ products|length }} found)</small></div>
+    {% else %}
+      <div class="section-title">{% if request.GET.cat %}Products{% else %}All Products{% endif %}</div>
+    {% endif %}
+
+    {% if products %}
+    <div class="product-grid">
+      {% for product in products %}
+      <div class="product-card">
+        <a href="{% url 'shop:product_detail' product.pk %}">
+          {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-card-img">
+          {% else %}
+            <div class="product-card-img-placeholder"><i class="bi bi-cpu"></i></div>
+          {% endif %}
+        </a>
+        <div class="product-card-body">
+          <div class="product-card-cat">{{ product.category|default:"Electronics" }}</div>
+          <a href="{% url 'shop:product_detail' product.pk %}" style="text-decoration:none">
+            <div class="product-card-name">{{ product.name }}</div>
+          </a>
+          <div class="product-card-price">KSh {{ product.retail_price|floatformat:0 }}</div>
+          <div class="product-card-stock {% if product.stock_qty <= 5 %}stock-low{% else %}stock-ok{% endif %}">
+            {% if product.stock_qty <= 0 %}Out of stock
+            {% elif product.stock_qty <= 5 %}Only {{ product.stock_qty }} left
+            {% else %}In stock{% endif %}
+          </div>
+          <form action="{% url 'shop:cart_add' product.pk %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="qty" value="1">
+            <button type="submit" class="btn-add-cart" data-product-id="{{ product.pk }}"
+              {% if product.stock_qty <= 0 %}disabled{% endif %}>
+              {% if product.stock_qty <= 0 %}<i class="bi bi-x-circle"></i> Out of Stock
+              {% else %}<i class="bi bi-cart-plus"></i> Add to Cart{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <div style="font-size:64px;opacity:.2"><i class="bi bi-search"></i></div>
+      <h5 class="mt-3">No products found</h5>
+      <p class="text-muted">Try a different search or <a href="{% url 'shop:home' %}">browse all products</a>.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

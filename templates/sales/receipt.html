@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Receipt {{ sale.receipt_number }}</title>
+  <style>
+    body { font-family: 'Courier New', monospace; max-width: 320px; margin: 20px auto; font-size: 13px; }
+    .header { text-align: center; margin-bottom: 12px; }
+    .header h2 { font-size: 20px; margin: 0; }
+    .header p { margin: 2px 0; font-size: 12px; }
+    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 2px 0; vertical-align: top; }
+    .right { text-align: right; }
+    .total-row { font-weight: bold; font-size: 15px; }
+    .footer { text-align: center; margin-top: 12px; font-size: 11px; }
+    @media print { button { display: none; } }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h2>GizmoBay</h2>
+  <p>Electronics Shop, Nairobi</p>
+  <p>Tel: +254 700 000 000</p>
+</div>
+<div class="divider"></div>
+<table>
+  <tr><td>Receipt:</td><td class="right"><b>{{ sale.receipt_number }}</b></td></tr>
+  <tr><td>Date:</td><td class="right">{{ sale.created_at|date:"d M Y H:i" }}</td></tr>
+  <tr><td>Customer:</td><td class="right">{{ sale.customer|default:"Walk-in" }}</td></tr>
+  <tr><td>Type:</td><td class="right">{{ sale.get_sale_type_display }}</td></tr>
+  <tr><td>Payment:</td><td class="right">{{ sale.get_payment_mode_display }}</td></tr>
+  <tr><td>Served by:</td><td class="right">{{ sale.served_by|default:"—" }}</td></tr>
+</table>
+<div class="divider"></div>
+<table>
+  <tr><td><b>Item</b></td><td class="right"><b>Qty</b></td><td class="right"><b>Price</b></td><td class="right"><b>Total</b></td></tr>
+  {% for item in items %}
+  <tr>
+    <td>{{ item.product_name }}</td>
+    <td class="right">{{ item.quantity }}</td>
+    <td class="right">{{ item.unit_price|floatformat:0 }}</td>
+    <td class="right">{{ item.subtotal|floatformat:0 }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<div class="divider"></div>
+{% if sale.discount %}<table><tr><td>Discount:</td><td class="right">- KSh {{ sale.discount|floatformat:0 }}</td></tr></table>{% endif %}
+<table><tr class="total-row"><td>TOTAL:</td><td class="right">KSh {{ sale.net_total|floatformat:0 }}</td></tr></table>
+<div class="divider"></div>
+<div class="footer">
+  <p>Thank you for shopping at GizmoBay!</p>
+  <p>Powered by GizmoBay SMS</p>
+</div>
+<br>
+<button onclick="window.print()" style="width:100%;padding:8px;font-size:13px;cursor:pointer;">🖨 Print Receipt</button>
+</body>
+</html>

@@ -1,0 +1,106 @@
+{% extends "shop/base_shop.html" %}
+{% block title %}{{ product.name }} — GizmoBay{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <nav aria-label="breadcrumb" style="padding:16px 0 0">
+    <ol class="breadcrumb" style="font-size:13px">
+      <li class="breadcrumb-item"><a href="{% url 'shop:home' %}" style="color:var(--shop-accent)">Home</a></li>
+      {% if product.category %}<li class="breadcrumb-item"><a href="{% url 'shop:home' %}?cat={{ product.category.pk }}" style="color:var(--shop-accent)">{{ product.category }}</a></li>{% endif %}
+      <li class="breadcrumb-item active">{{ product.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="product-detail-grid">
+    <!-- Image -->
+    <div class="product-detail-img-wrap">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+      {% else %}
+        <div class="product-detail-img-placeholder"><i class="bi bi-cpu"></i></div>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div style="padding-top:8px">
+      <div class="product-detail-category">{{ product.category|default:"Electronics" }}</div>
+      <h1 class="product-detail-name">{{ product.name }}</h1>
+      <div class="product-detail-price">KSh {{ product.retail_price|floatformat:0 }}</div>
+
+      <div style="font-size:13px;color:var(--shop-muted);margin-bottom:8px;">
+        SKU: <code>{{ product.sku }}</code>
+        {% if product.barcode %} &nbsp;·&nbsp; Barcode: <code>{{ product.barcode }}</code>{% endif %}
+      </div>
+
+      {% if product.description %}
+      <p class="product-detail-desc">{{ product.description }}</p>
+      {% endif %}
+
+      {% if product.stock_qty > 0 %}
+      <form action="{% url 'shop:cart_add' product.pk %}" method="post">
+        {% csrf_token %}
+        <div class="qty-control">
+          <span style="font-size:13px;font-weight:500;">Qty:</span>
+          <button type="button" class="qty-btn-detail" id="qtyMinus">−</button>
+          <span class="qty-display" id="qtyDisplay">1</span>
+          <button type="button" class="qty-btn-detail" id="qtyPlus">+</button>
+          <input type="hidden" name="qty" id="qtyInput" value="1">
+          <span style="font-size:12px;color:var(--shop-muted)">({{ product.stock_qty }} in stock)</span>
+        </div>
+        <button type="submit" class="btn-shop-primary" style="padding:12px 28px;font-size:15px;width:100%;margin-bottom:12px">
+          <i class="bi bi-cart-plus me-2"></i>Add to Cart
+        </button>
+      </form>
+      <a href="{% url 'shop:cart' %}" class="btn-shop-outline" style="display:block;text-align:center;padding:11px 28px;font-size:14px;">
+        <i class="bi bi-cart3 me-2"></i>View Cart
+      </a>
+      {% else %}
+      <div class="alert alert-warning" style="font-size:14px"><i class="bi bi-exclamation-triangle me-2"></i>This product is currently out of stock.</div>
+      {% endif %}
+
+      <div class="trust-badges">
+        <div class="trust-badge"><i class="bi bi-shield-check"></i> Genuine product</div>
+        <div class="trust-badge"><i class="bi bi-truck"></i> Nairobi delivery</div>
+        <div class="trust-badge"><i class="bi bi-phone"></i> M-Pesa payment</div>
+        <div class="trust-badge"><i class="bi bi-arrow-return-left"></i> Easy returns</div>
+      </div>
+    </div>
+  </div>
+
+  {% if related %}
+  <div class="products-section" style="padding-top:12px">
+    <div class="section-title">Related Products</div>
+    <div class="product-grid">
+      {% for p in related %}
+      <div class="product-card">
+        <a href="{% url 'shop:product_detail' p.pk %}">
+          {% if p.image %}<img src="{{ p.image.url }}" alt="{{ p.name }}" class="product-card-img">
+          {% else %}<div class="product-card-img-placeholder"><i class="bi bi-cpu"></i></div>{% endif %}
+        </a>
+        <div class="product-card-body">
+          <a href="{% url 'shop:product_detail' p.pk %}" style="text-decoration:none">
+            <div class="product-card-name">{{ p.name }}</div>
+          </a>
+          <div class="product-card-price">KSh {{ p.retail_price|floatformat:0 }}</div>
+          <form action="{% url 'shop:cart_add' p.pk %}" method="post">{% csrf_token %}
+            <input type="hidden" name="qty" value="1">
+            <button type="submit" class="btn-add-cart" {% if p.stock_qty <= 0 %}disabled{% endif %}>
+              <i class="bi bi-cart-plus"></i> Add to Cart</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let qty = 1;
+const max = {{ product.stock_qty }};
+const display = document.getElementById('qtyDisplay');
+const input   = document.getElementById('qtyInput');
+document.getElementById('qtyMinus')?.addEventListener('click', () => { if(qty>1){qty--;display.textContent=qty;input.value=qty;} });
+document.getElementById('qtyPlus')?.addEventListener('click',  () => { if(qty<max){qty++;display.textContent=qty;input.value=qty;} });
+</script>
+{% endblock %}

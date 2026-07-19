@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GizmoBay{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon"><i class="bi bi-cpu-fill"></i></span>
+      <span class="brand-name">GizmoBay</span>
+    </div>
+    <nav class="sidebar-nav">
+      {% if user.is_admin %}
+      <a href="{% url 'reports:dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      </a>
+      {% endif %}
+      <a href="{% url 'sales:pos' %}" class="nav-item {% if request.resolver_match.url_name == 'pos' %}active{% endif %}">
+        <i class="bi bi-cart3"></i><span>New sale</span>
+      </a>
+      <a href="{% url 'sales:sale_list' %}" class="nav-item {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name != 'pos' %}active{% endif %}">
+        <i class="bi bi-receipt"></i><span>Sales</span>
+      </a>
+      <a href="{% url 'inventory:product_list' %}" class="nav-item {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name != 'barcode_stock_in' %}active{% endif %}">
+        <i class="bi bi-box-seam"></i><span>Inventory</span>
+      </a>
+      {% if user.is_admin %}
+      <a href="{% url 'purchasing:po_list' %}" class="nav-item {% if request.resolver_match.app_name == 'purchasing' %}active{% endif %}">
+        <i class="bi bi-truck"></i><span>Purchasing</span>
+      </a>
+      {% endif %}
+      <a href="{% url 'customers:customer_list' %}" class="nav-item {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
+        <i class="bi bi-people"></i><span>Customers</span>
+      </a>
+      {% if user.is_admin %}
+      <div class="nav-section-label">Admin</div>
+      <a href="{% url 'reports:sales_report' %}" class="nav-item {% if request.resolver_match.url_name == 'sales_report' %}active{% endif %}">
+        <i class="bi bi-bar-chart-line"></i><span>Reports</span>
+      </a>
+      <a href="{% url 'reports:stock_report' %}" class="nav-item {% if request.resolver_match.url_name == 'stock_report' %}active{% endif %}">
+        <i class="bi bi-clipboard-data"></i><span>Stock report</span>
+      </a>
+      <a href="{% url 'reports:expense_list' %}" class="nav-item {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="bi bi-wallet2"></i><span>Expenses</span>
+      </a>
+      <a href="{% url 'accounts:user_list' %}" class="nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="bi bi-person-gear"></i><span>Workers</span>
+      </a>
+      <a href="{% url 'accounts:audit_log' %}" class="nav-item {% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}">
+        <i class="bi bi-shield-check"></i><span>Audit log</span>
+      </a>
+      <a href="{% url 'inventory:barcode_stock_in' %}" class="nav-item {% if request.resolver_match.url_name == 'barcode_stock_in' %}active{% endif %}">
+        <i class="bi bi-upc-scan"></i><span>Scan stock-in</span>
+      </a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ user.username|first|upper }}</div>
+        <div>
+          <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="user-role">{{ user.get_role_display }}</div>
+        </div>
+      </div>
+      <a href="{% url 'accounts:logout' %}" class="btn-logout" title="Sign out"><i class="bi bi-box-arrow-right"></i></a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    </div>
+    <div class="content-area">
+      {% if messages %}{% for msg in messages %}
+        <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+          {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}{% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

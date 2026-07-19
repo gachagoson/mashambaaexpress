@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Categories — GizmoBay{% endblock %}
+{% block page_title %}Categories{% endblock %}
+{% block topbar_actions %}
+  {% if user.is_admin %}<a href="{% url 'inventory:category_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add category</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Category</th><th>Description</th><th>Products</th></tr></thead>
+      <tbody>
+        {% for c in categories %}
+        <tr>
+          <td class="fw-600">{{ c.name }}</td>
+          <td>{{ c.description|default:"—" }}</td>
+          <td>{{ c.products.count }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-muted py-4">No categories yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

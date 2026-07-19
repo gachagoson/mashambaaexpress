@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — GizmoBay{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="bi bi-currency-exchange"></i></div>
+    <div>
+      <div class="stat-label">Today's Revenue</div>
+      <div class="stat-value">KSh {{ today_revenue|floatformat:0 }}</div>
+      <div class="stat-sub">{{ today_count }} sale{{ today_count|pluralize }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
+    <div>
+      <div class="stat-label">This Week</div>
+      <div class="stat-value">KSh {{ week_revenue|floatformat:0 }}</div>
+      <div class="stat-sub">Last 7 days</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><i class="bi bi-boxes"></i></div>
+    <div>
+      <div class="stat-label">Stock Value</div>
+      <div class="stat-value">KSh {{ stock_value|floatformat:0 }}</div>
+      <div class="stat-sub">At cost price</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+    <div>
+      <div class="stat-label">Low Stock Items</div>
+      <div class="stat-value">{{ low_stock|length }}</div>
+      <div class="stat-sub">Need restocking</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Revenue — Last 7 Days</div>
+      <div class="card-body"><canvas id="revenueChart" height="120"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">
+        Low Stock Alerts
+        <a href="{% url 'reports:stock_report' %}" class="btn btn-sm btn-outline-secondary">View all</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead><tr><th>Product</th><th>Qty</th><th>Alert</th></tr></thead>
+          <tbody>
+            {% for p in low_stock %}
+            <tr class="{% if p.is_out_of_stock %}out-stock-row{% else %}low-stock-row{% endif %}">
+              <td><a href="{% url 'inventory:product_detail' p.pk %}">{{ p.name }}</a></td>
+              <td class="{% if p.is_out_of_stock %}stock-out{% else %}stock-low{% endif %}">{{ p.stock_qty }}</td>
+              <td class="text-muted">{{ p.low_stock_alert }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-3">All stock levels OK</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4 d-flex gap-3 flex-wrap">
+  <a href="{% url 'sales:pos' %}" class="btn btn-primary"><i class="bi bi-cart-plus me-2"></i>New Sale</a>
+  <a href="{% url 'inventory:product_create' %}" class="btn btn-outline-secondary"><i class="bi bi-plus-lg me-2"></i>Add Product</a>
+  <a href="{% url 'purchasing:po_create' %}" class="btn btn-outline-secondary"><i class="bi bi-truck me-2"></i>New Purchase Order</a>
+  <a href="{% url 'reports:expense_create' %}" class="btn btn-outline-secondary"><i class="bi bi-wallet2 me-2"></i>Record Expense</a>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('revenueChart');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ chart_labels|safe }},
+    datasets: [{
+      label: 'Revenue (KSh)',
+      data: {{ chart_data|safe }},
+      backgroundColor: 'rgba(99,102,241,0.15)',
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 11 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+</script>
+{% endblock %}

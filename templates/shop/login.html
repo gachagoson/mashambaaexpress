@@ -1,0 +1,32 @@
+{% extends "shop/base_shop.html" %}
+{% block title %}Sign In — GizmoBay{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <i class="bi bi-cpu-fill"></i>
+      <h2>Welcome back</h2>
+      <p>Sign in to your GizmoBay account</p>
+    </div>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" style="font-size:13px">{{ form.non_field_errors.0 }}</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}<div class="text-danger" style="font-size:12px">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Password</label>
+        {{ form.password }}
+      </div>
+      <button type="submit" class="btn-shop-primary" style="width:100%;padding:11px;font-size:15px;font-weight:700">Sign In</button>
+    </form>
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:#6b7280">
+      No account? <a href="{% url 'shop:register' %}" class="auth-link">Register free</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

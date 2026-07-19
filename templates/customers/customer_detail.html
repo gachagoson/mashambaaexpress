@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} — GizmoBay{% endblock %}
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted">Type</td><td><span class="status-badge badge-{{ customer.customer_type }}">{{ customer.get_customer_type_display }}</span></td></tr>
+          <tr><td class="text-muted">Phone</td><td>{{ customer.phone|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Email</td><td>{{ customer.email|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Location</td><td>{{ customer.location|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Notes</td><td>{{ customer.notes|default:"—" }}</td></tr>
+          <tr><td class="text-muted">Since</td><td>{{ customer.created_at|date:"d M Y" }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Purchase history</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Receipt</th><th>Date</th><th>Type</th><th>Payment</th><th class="text-end">Total</th><th></th></tr></thead>
+          <tbody>
+            {% for sale in sales %}
+            <tr>
+              <td><code>{{ sale.receipt_number }}</code></td>
+              <td style="font-size:12px;">{{ sale.created_at|date:"d M Y H:i" }}</td>
+              <td><span class="status-badge badge-{{ sale.sale_type }}">{{ sale.get_sale_type_display }}</span></td>
+              <td><span class="status-badge badge-{{ sale.payment_mode }}">{{ sale.get_payment_mode_display }}</span></td>
+              <td class="text-end fw-600">KSh {{ sale.total_amount|floatformat:0 }}</td>
+              <td><a href="{% url 'sales:sale_receipt' sale.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank"><i class="bi bi-printer"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">No sales yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

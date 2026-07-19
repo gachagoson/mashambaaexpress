@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Customers — GizmoBay{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'customers:customer_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add customer</a>
+{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search customers…" class="form-control" style="max-width:320px">
+      <button class="btn btn-outline-secondary" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Type</th><th>Phone</th><th>Location</th><th>Sales</th><th></th></tr></thead>
+      <tbody>
+        {% for c in customers %}
+        <tr>
+          <td class="fw-500"><a href="{% url 'customers:customer_detail' c.pk %}" style="text-decoration:none;color:var(--text)">{{ c.name }}</a></td>
+          <td><span class="status-badge badge-{{ c.customer_type }}">{{ c.get_customer_type_display }}</span></td>
+          <td>{{ c.phone|default:"—" }}</td>
+          <td>{{ c.location|default:"—" }}</td>
+          <td>{{ c.sales.count }}</td>
+          <td><a href="{% url 'customers:customer_detail' c.pk %}" class="btn btn-sm btn-outline-secondary">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No customers yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

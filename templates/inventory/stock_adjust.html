@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Adjust Stock — GizmoBay{% endblock %}
+{% block page_title %}Adjust Stock — {{ product.name }}{% endblock %}
+{% block content %}
+<div class="row"><div class="col-lg-4">
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="text-muted" style="font-size:13px;">Current stock</div>
+      <div style="font-size:32px;font-weight:700;" class="{% if product.is_out_of_stock %}stock-out{% elif product.is_low_stock %}stock-low{% else %}stock-ok{% endif %}">
+        {{ product.stock_qty }} units
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <form method="post">{% csrf_token %}{{ form|crispy }}
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn btn-primary" type="submit">Confirm</button>
+          <a href="{% url 'inventory:product_detail' product.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}
